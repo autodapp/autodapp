@@ -1,0 +1,71 @@
+version: "3"
+
+services:
+  proxy:
+    image: rust
+    container_name: proxy
+    command: /bin/bash -c "while true; do sleep 200; echo 'TERMINAL is up'; done"
+    working_dir: /code
+    volumes:
+      - "./:/code"
+    networks:
+      - sqlproxy
+      - sqlproxybackend
+    depends_on:
+      - mariadb-server
+      - postgres-server
+
+  mariadb-server:
+    image: mariadb
+    container_name: mariadb-server
+    restart: always
+    networks:
+      - sqlproxybackend
+    environment:
+      - MYSQL_DATABASE=testdb
+      - MYSQL_ROOT_PASSWORD=testpassword
+      - MYSQL_USER=testuser
+      - MYSQL_PASSWORD=testpassword
+
+  postgres-server:
+    image: postgres
+    container_name: postgres-server
+    restart: always
+    networks:
+      - sqlproxybackend
+    environment:
+      - POSTGRES_DB=testdb
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=testpassword
+
+  adminer:
+    image: adminer
+    container_name: adminer 
+    restart: always
+    networks:
+      - sqlproxybackend
+    ports:
+      - 8080:8080
+    depends_on:
+      - mariadb-server
+      - postgres-server
+      - proxy
+
+  tendermint:
+    image: tendermint/tendermint:v0.32.8
+    container_name: tendermint-node
+    entrypoint: /bin/sh -c "tendermint init && tendermint unsafe_reset_all && tendermint node --consensus.create_empty_blocks=false --proxy_app=tcp://proxy:26658 --rpc.laddr=tcp://0.0.0.0:26657"
+    volumes:
+      - "/tmp/tendermint:/tendermint"
+    networks:
+      - sqlproxybackend
+    depends_on:
+      - mariadb-server
+      - postgres-server
+      - proxy
+
+networks:
+  sqlproxy:
+    driver: bridge
+  sqlproxybackend:
+    driver: bridge

@@ -1,0 +1,26 @@
+[package]
+name = "autodapp"
+version = "0.1.0"
+authors = ["ryscheng"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sql-proxy = { path = "../" }
+abci = "0.6"
+async-trait = "0.1.22"
+env_logger = "0.7"
+futures = "0.3"
+hex = "0.4"
+http = "0.2"
+hyper = "0.13"
+log = "0.4"
+mysql = "18.0"
+postgres = "0.17.2"
+tokio-postgres = "0.5.3"
+rand = "0.7"
+sodiumoxide = "0.2"
+sqlparser = "0.5"
+tokio = { version = "0.2", features = ["full"] }
+urlencoding = "1.0"

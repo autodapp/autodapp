@@ -1,0 +1,102 @@
+version: "3"
+
+services:
+   
+  redis:
+    image: 'bitnami/redis:5.0'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+
+  discourse:
+    image: 'bitnami/discourse:2'
+    container_name: discourse
+    ports:
+      - '80:3000'
+    depends_on:
+      - redis
+#      - proxy 
+    environment:
+      - POSTGRESQL_HOST=proxy
+      - POSTGRESQL_ROOT_USER=root
+      - POSTGRESQL_ROOT_PASSWORD=testpassword
+      - POSTGRESQL_CLIENT_CREATE_DATABASE_NAME=bitnami_application
+      - POSTGRESQL_CLIENT_CREATE_DATABASE_USERNAME=root
+      - POSTGRESQL_CLIENT_CREATE_DATABASE_PASSWORD=testpassword
+      - DISCOURSE_POSTGRESQL_NAME=bitnami_application
+      - DISCOURSE_POSTGRESQL_USERNAME=root
+      - DISCOURSE_POSTGRESQL_PASSWORD=testpassword
+      - DISCOURSE_HOSTNAME=localhost
+    healthcheck:
+      test: ["CMD", "curl", "-v", "telnet://proxy:5432"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+    
+  sidekiq:
+    image: 'bitnami/discourse:2'
+    depends_on:
+      - discourse
+#      - proxy
+    command: 'nami start --foreground discourse-sidekiq'
+    environment:
+      - POSTGRESQL_HOST=proxy
+      - POSTGRESQL_ROOT_USER=root
+      - POSTGRESQL_ROOT_PASSWORD=testpassword
+      - DISCOURSE_POSTGRESQL_NAME=bitnami_application
+      - DISCOURSE_POSTGRESQL_USERNAME=root
+      - DISCOURSE_POSTGRESQL_PASSWORD=testpassword
+      - DISCOURSE_HOST=discourse
+      - DISCOURSE_PORT=3000
+      - DISCOURSE_HOSTNAME=localhost
+
+networks:
+  default:
+    external:
+      name: sql-proxy-rs_sqlproxy
+
+#  postgres-server:
+#    image: postgres
+#    container_name: postgres-server
+#    restart: always
+#    environment:
+#      - POSTGRES_DB=testdb
+#      - POSTGRES_USER=root
+#      - POSTGRES_PASSWORD=testpassword
+#
+#  adminer:
+#    image: adminer
+#    container_name: adminer 
+#    restart: always
+#    ports:
+#      - 8080:8080
+#    links:
+#      - postgres-server
+#      - proxy
+#
+#  proxy:
+#    image: rust
+#    container_name: proxy
+#    #command: /bin/bash -c "RUST_LOG=trace cargo run --example passthrough -- 0.0.0.0:5432 postgres-server:5432 postgres"
+#    command: /bin/bash -c "while true; do sleep 200; echo 'TERMINAL is up'; done"
+#    volumes:
+#      - "../../:/code"
+#    working_dir: /code
+#    links:
+#      - postgres-server
+#
+#  tendermint:
+#    image: tendermint/tendermint:v0.32.8
+#    container_name: tendermint-node
+#    #entrypoint: /bin/sh -c "tendermint init && tendermint unsafe_reset_all && tendermint node --consensus.create_empty_blocks=false --proxy_app=tcp://proxy:26658 --rpc.laddr=tcp://0.0.0.0:26657"
+#    command: /bin/bash -c "while true; do sleep 200; echo 'TERMINAL is up'; done"
+#    volumes:
+#      - "/tmp/tendermint:/tendermint"
+#    links:
+#      - postgres-server
+#      - proxy
+#    healthcheck:
+#      test: ["CMD", "curl", "-v", "telnet://proxy:26658"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 10
+  
